@@ -4,23 +4,13 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
+#define PORT 8888
 #define BUF_SIZE 256
 
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <port>\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
-
-    int port = atoi(argv[1]);
-    if (port <= 0 || port > 65535) {
-        fprintf(stderr, "Invalid port number\n");
-        exit(EXIT_FAILURE);
-    }
-
+int main() {
     int server_fd, client_fd;
     struct sockaddr_in server_addr, client_addr;
-    socklen_t addr_len = sizeof(struct sockaddr_in);
+    int addr_len = sizeof(struct sockaddr_in);
     char buf[BUF_SIZE];
 
     // Create socket
@@ -33,7 +23,7 @@ int main(int argc, char *argv[]) {
     memset(&server_addr, 0, addr_len);
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(port);
+    server_addr.sin_port = htons(PORT);
 
     // Bind socket to address and port
     if (bind(server_fd, (struct sockaddr *)&server_addr, addr_len) == -1) {
@@ -47,10 +37,10 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Server listening on port %d\n", port);
+    printf("Server listening on port %d\n", PORT);
 
     // Accept incoming connection
-    if ((client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &addr_len)) == -1) {
+    if ((client_fd = accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t*)&addr_len)) == -1) {
         perror("Accept failed");
         exit(EXIT_FAILURE);
     }
@@ -65,6 +55,10 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Received data from client: %s\n", buf);
+
+    // Vulnerable code - buffer overflow vulnerability
+    char vuln_buf[BUF_SIZE];
+    strcpy(vuln_buf, buf);
 
     // Close sockets
     close(client_fd);
